@@ -1,97 +1,78 @@
-// its a class
+// for validating
 const Joi = require('joi');
-
 const express =require('express');
 const app = express();
-// we are adding a piece of middleware
+// to use json formatting
 app.use(express.json());
-const courses =[
-    {id: 1, coursename:'course1'},
-    {id: 2, coursename:'course2'},
-    {id: 3, coursename:'course3'}
+
+const genres =[
+    {id: 1, name: "action"},
+    {id: 2, name: "drama"},
+    {id: 3, name: "comedy"}
 ];
 
-// defino una ruta
-app.get('/', (req,res)=>{
-    res.send("Hello world");
+// get all genres
+app.get('/vidly.com/api/genres', (req,res)=>{
+    res.send(genres)
 });
 
-app.get('/api/courses', (req,res)=>{
-    res.send(courses);
+// get a specific genre, given by the id
+app.get('/vidly.com/api/genres/:id', (req,res)=>{
+// checar si existe
+    const genre =genres.find(c => c.id === parseInt(req.params.id))
+    if(!genre) return res.status(404).send("Genre with specified id not found")
+    res.send(genre);
 });
 
-app.get('/api/posts/:month/:year', (req,res)=>{
-    res.send(req.params);
-});
-app.get('/api/courses/:id',(req,res)=>{
-    // find method available, argumnet expected a function, used to find something that matches a given criteria
-    const course =courses.find(c => c.id === parseInt(req.params.id))
-    if(!course) return res.status(404).send("Course not found");
-    res.send(course);
-});
+// post a genre
 
-app.post('/api/courses',(req,res)=>{
-    const {error}=validateCourse(req.body);
-    //validate
-    if(error){
-        return res.status(400).send(error.details[0].message);
-        
-    }
-    const course ={
-        
-        id: courses.length +1,
-        // this means, im passing it through the url
-        coursename: req.body.coursename
+app.post('/vidly.com/api/genres',(req,res)=>{
+    const {error}= validateGenre(req.body);
+    if(error) return res.status(400).send(error.details[0].message)
+
+    const genre = {
+        id: genres.length+1,
+        name: req.body.name
     };
-
-    courses.push(course);
-    res.send(course);
+    genres.push(genre);
+    res.send(genre);
 });
 
-app.put('/api/courses/:id',(req,res)=>{
+// update genre
 
-    // if not found send 404 error
-    const course =courses.find(c => c.id === parseInt(req.params.id))
-    if(!course){
-        return res.status(404).send("Course not found");
-       
-    } 
-    // {error} = result.error
-    // object destructuring
-    const {error}=validateCourse(req.body);
-    //validate
-    if(error){
-        return res.status(400).send(error.details[0].message);  
-    }
+app.put('/vidly.com/api/genres/:id',(req,res)=>{
+    // check if it exists
+    const genre =genres.find(c => c.id === parseInt(req.params.id))
+    if(!genre) return res.status(404).send("Genre with specified id not found")
 
-    // update course
-    course.coursename=req.body.coursename;
-     // return the updatedcourse
-    res.send(course);
-   
+    // validate 
+    const {error}= validateGenre(req.body);
+    if(error) return res.status(400).send(error.details[0].message)
+    // update 
+    genre.name=req.body.name;
+    res.send(genre);
 });
 
-function validateCourse(course){
-    const schema={
-        coursename: Joi.string().min(3).required()
-    };
-    return Joi.validate(course,schema);
-}
-
-app.delete('/api/courses/:id',(req,res)=>{
-    // Look up the course
-    const course =courses.find(c => c.id === parseInt(req.params.id))
-    // Not existing,return 404
-    if(!course) 
-    return res.status(404).send("Course not found");
+// delete a specifig genre
+app.delete('/vidly.com/api/genres/:id',(req,res)=>{
+    // check if it exists
+    const genre =genres.find(c => c.id === parseInt(req.params.id))
+    if(!genre) return res.status(404).send("Genre with specified id not found")
 
     // Delete
-    const index = courses.indexOf(course);
-    courses.splice(index,1);
-    // Return the same course
-    res.send(course);
-})
+    const index = genres.indexOf(genre);
+    genres.splice(index,1);
+    res.send(genre);
+});
 
+// function used to validate if an input is valid
+function validateGenre(genre){
+    const schema={
+        name: Joi.string().min(3).required()
+    };
+    return Joi.validate(genre,schema);
+}
+
+// port where it´s listening
 const port = process.env.PORT || 3000;
-
 app.listen(port, ()=>console.log(`Listening on port ${port}`));
